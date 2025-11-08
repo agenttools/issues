@@ -12,7 +12,7 @@ import {
   initializeLinear,
   type Team,
 } from './src/lib/linear';
-import { extractIssuesStructured, matchIssuesToLinear, initializeAnthropic, generateEnrichmentQuestions } from './src/lib/claude';
+import { extractIssuesStructured, matchIssuesToLinear, initializeAnthropic, generateTranscriptEnrichmentQuestions, parseDeadlineToDate } from './src/lib/claude';
 import { getAnthropicApiKey, getLinearApiKey } from './src/lib/config';
 import { symbols, theme, box, separator, tree, actionBadge } from './src/lib/theme';
 
@@ -21,7 +21,7 @@ const program = new Command();
 program
   .name('issue')
   .description('CLI tool to manage Linear issues from client feedback')
-  .version('0.2.3')
+  .version('0.2.4')
   .option('--tldr', 'Show a brief explanation of what this tool does');
 
 // Handle --tldr flag
@@ -120,7 +120,79 @@ program
 
     console.log(theme.muted(`\n${symbols.info} Captured ${transcript.length} characters\n`));
 
-    // Step 2: Fetch teams from Linear
+    // Step 2: Ask enrichment questions to gather context
+    console.log(theme.heading('ENRICHMENT QUESTIONS') + '\n');
+
+    const shouldEnrich = await confirm({
+      message: 'Would you like to answer follow-up questions for better context?',
+      default: true,
+    });
+
+    const enrichmentContext: Record<string, string> = {};
+    let parsedDeadline: string | null = null;
+
+    if (shouldEnrich) {
+      // Ask deadline question first
+      const deadlineInput = await input({
+        message: 'When should the deadline be? (e.g., "5 working days", "next friday", "this thursday", or press Enter to skip):',
+      });
+
+      if (deadlineInput.trim()) {
+        const deadlineSpinner = ora('Parsing deadline...').start();
+        try {
+          parsedDeadline = await parseDeadlineToDate(deadlineInput);
+          if (parsedDeadline) {
+            deadlineSpinner.succeed(`Deadline set to: ${parsedDeadline}`);
+            enrichmentContext['Deadline'] = deadlineInput;
+          } else {
+            deadlineSpinner.warn('Could not parse deadline - skipping');
+          }
+        } catch (error) {
+          deadlineSpinner.fail('Failed to parse deadline');
+          console.error(theme.error('Error:'), error);
+        }
+      }
+
+      // Generate and ask contextual questions
+      const questionSpinner = ora('Generating contextual questions...').start();
+      let questions = [];
+      try {
+        questions = await generateTranscriptEnrichmentQuestions(transcript);
+        questionSpinner.succeed(`Generated ${questions.length} questions`);
+      } catch (error) {
+        questionSpinner.fail('Failed to generate questions');
+        console.error(theme.error('Error:'), error);
+        questions = [];
+      }
+
+      console.log();
+      for (const q of questions) {
+        // Add numbered choices + write-in option
+        const numberedChoices = q.options.map((opt, idx) => ({
+          name: `${idx + 1}. ${opt.label}`,
+          value: opt.label,
+        }));
+        numberedChoices.push({ name: 'Other (write in)', value: '__write_in__' });
+
+        const answer = await select({
+          message: q.question,
+          choices: numberedChoices,
+        });
+
+        // Handle write-in
+        if (answer === '__write_in__') {
+          const customAnswer = await input({
+            message: 'Enter your answer:',
+          });
+          enrichmentContext[q.question] = customAnswer;
+        } else {
+          enrichmentContext[q.question] = answer;
+        }
+      }
+      console.log();
+    }
+
+    // Step 3: Fetch teams from Linear
     const teams = await fetchTeams();
 
     const teamChoices = teams.map(team => ({
@@ -140,9 +212,9 @@ program
     const existingIssues = await fetchIssuesForTeam(teamId);
     spinner.succeed(`Found ${existingIssues.length} existing issues`);
 
-    // Step 4: Use Claude to extract issues from transcript
+    // Step 4: Use Claude to extract issues from transcript with enrichment context
     const aiSpinner = ora('Analyzing transcript with Claude...').start();
-    const extractedIssues = await extractIssuesStructured(transcript);
+    const extractedIssues = await extractIssuesStructured(transcript, enrichmentContext);
     aiSpinner.succeed(`Extracted ${extractedIssues.length} issues from transcript`);
 
     // Step 5: Match extracted issues to existing Linear issues
@@ -293,108 +365,6 @@ program
       processedIssues.push(...refinedProcessed);
     }
 
-    // Enrich issues with additional context before creating/updating
-    console.log('\n' + theme.heading('ENRICHMENT QUESTIONS') + '\n');
-
-    const shouldEnrich = await confirm({
-      message: 'Would you like to answer enrichment questions for better context?',
-      default: true,
-    });
-
-    if (shouldEnrich) {
-      console.log(theme.muted('\nLet\'s gather some additional context for these issues...\n'));
-    } else {
-      console.log(theme.muted('\nSkipping enrichment questions...\n'));
-    }
-
-    for (let i = 0; i < processedIssues.length; i++) {
-      const item = processedIssues[i];
-      const issue = item.extractedIssue;
-
-      if (!shouldEnrich) continue;
-
-      console.log(theme.label(`\n${i + 1}. ${issue.title}`) + theme.muted(` (${item.action})`));
-
-      if (item.action === 'create') {
-        // Deadline question - natural language input
-        const deadline = await input({
-          message: 'When should the deadline be? (e.g., "5 working days", "next friday", "this thursday"):',
-        });
-
-        // Time commitment / complexity
-        const timeCommitment = await select({
-          message: 'Time commitment estimate?',
-          choices: [
-            { name: 'Brainless', value: 'brainless' },
-            { name: '1 hour', value: '1_hour' },
-            { name: '3 hour focus', value: '3_hour_focus' },
-            { name: '1 day', value: '1_day' },
-            { name: '1-2 days', value: '1_2_days' },
-            { name: '2+ days', value: '2plus_days' },
-          ],
-        });
-
-        // Generate contextual questions using Claude
-        const questionSpinner = ora('Generating contextual questions...').start();
-        let contextualQuestions = [];
-        try {
-          contextualQuestions = await generateEnrichmentQuestions(issue, transcript);
-          questionSpinner.succeed(`Generated ${contextualQuestions.length} contextual questions`);
-        } catch (error) {
-          questionSpinner.fail('Failed to generate contextual questions');
-          console.error(theme.error('Error generating questions:'), error);
-          contextualQuestions = [];
-        }
-
-        // Store answers to contextual questions
-        const contextualAnswers: Record<string, string> = {};
-
-        for (const q of contextualQuestions) {
-          const answer = await select({
-            message: q.question,
-            choices: q.options.map(opt => ({ name: opt.label, value: opt.value })),
-          });
-          contextualAnswers[q.question] = answer;
-        }
-
-        // Append enrichment data to description
-        let enrichmentNotes = `\n\n---\n**Deadline:** ${deadline}\n**Time Commitment:** ${timeCommitment}`;
-
-        // Add contextual answers
-        if (Object.keys(contextualAnswers).length > 0) {
-          enrichmentNotes += '\n\n**Additional Context:**';
-          for (const [question, answer] of Object.entries(contextualAnswers)) {
-            enrichmentNotes += `\n- ${question} ${answer}`;
-          }
-        }
-
-        issue.description += enrichmentNotes;
-      } else if (item.action === 'update' || item.action === 'comment') {
-        // For updates/comments, ask if additional context is needed
-        const needsContext = await select({
-          message: `Add additional context to this ${item.action}?`,
-          choices: [
-            { name: 'No, proceed as-is', value: 'no' },
-            { name: 'Yes, add notes', value: 'yes' },
-          ],
-        });
-
-        if (needsContext === 'yes') {
-          const additionalContext = await input({
-            message: 'Additional context or notes:',
-          });
-
-          if (additionalContext.trim()) {
-            issue.description += `\n\n**Additional Context:** ${additionalContext}`;
-          }
-        }
-      }
-    }
-
-    if (shouldEnrich) {
-      console.log('\n' + theme.success(`${symbols.success} Enrichment complete!\n`));
-    }
-
     // Execute the changes
     const execSpinner = ora('Applying changes to Linear...').start();
 
@@ -415,6 +385,7 @@ program
             title: extractedIssue.title,
             description: extractedIssue.description,
             priority: priorityMap[extractedIssue.priority],
+            ...(parsedDeadline ? { dueDate: parsedDeadline } : {}),
           });
           results.created.push(newIssue.identifier);
         } else if (action === 'update' && matchedIssueId) {

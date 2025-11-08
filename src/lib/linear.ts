@@ -69,12 +69,14 @@ export async function createIssue(params: {
   title: string;
   description: string;
   priority: number;
+  dueDate?: string; // ISO date string (YYYY-MM-DD)
 }): Promise<Issue> {
   const issuePayload = await linearClient.createIssue({
     teamId: params.teamId,
     title: params.title,
     description: params.description,
     priority: params.priority,
+    ...(params.dueDate ? { dueDate: params.dueDate } : {}),
   });
 
   const createdIssue = await issuePayload.issue;

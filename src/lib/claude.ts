@@ -42,9 +42,74 @@ export interface ProcessedIssue {
 }
 
 /**
+ * Generate enrichment questions based on the transcript to gather context
+ * Always includes a deadline question as the first question
+ */
+export async function generateTranscriptEnrichmentQuestions(transcript: string): Promise<EnrichmentQuestion[]> {
+  const prompt = `Based on this client feedback, generate 1-3 contextual questions to better understand the requirements before creating tickets.
+
+Client Feedback:
+${transcript}
+
+Generate questions that would help understand:
+- Specific technical requirements or constraints
+- User impact and priority
+- Dependencies or related work
+- Design or UX preferences
+
+Each question should have 2-4 options. Return as JSON:
+[
+  {
+    "question": "Question text?",
+    "options": [
+      { "label": "Option 1", "value": "option_1" },
+      { "label": "Option 2", "value": "option_2" }
+    ]
+  }
+]
+
+Return ONLY valid JSON. Generate 1-3 questions.`;
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-5-20250929',
+    max_tokens: 2048,
+    messages: [
+      { role: 'user', content: prompt },
+      { role: 'assistant', content: '[' },
+    ],
+  });
+
+  const content = message.content[0];
+  if (content.type !== 'text') {
+    throw new Error('Expected text response from Claude');
+  }
+
+  try {
+    const jsonText = '[' + content.text.trim();
+    const questions: EnrichmentQuestion[] = JSON.parse(jsonText);
+    return questions;
+  } catch (error) {
+    console.error('Failed to parse enrichment questions:', '[' + content.text);
+    console.error('Full error:', error);
+    throw new Error('Claude did not return valid JSON for enrichment questions');
+  }
+}
+
+/**
  * Extract structured issues from transcript using Claude
  */
-export async function extractIssuesStructured(transcript: string): Promise<ExtractedIssue[]> {
+export async function extractIssuesStructured(
+  transcript: string,
+  enrichmentContext?: Record<string, string>
+): Promise<ExtractedIssue[]> {
+  let enrichmentSection = '';
+  if (enrichmentContext && Object.keys(enrichmentContext).length > 0) {
+    enrichmentSection = '\n\nAdditional Context from Follow-up Questions:\n';
+    for (const [question, answer] of Object.entries(enrichmentContext)) {
+      enrichmentSection += `- ${question}: ${answer}\n`;
+    }
+  }
+
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 8048,
@@ -60,7 +125,7 @@ For each issue, provide:
 - priority: One of: "low", "medium", "high", "urgent"
 
 Client feedback:
-${transcript}
+${transcript}${enrichmentSection}
 
 Return ONLY a valid JSON array. Example format:
 [
@@ -207,6 +272,61 @@ Return ONLY valid JSON.`;
 export interface EnrichmentQuestion {
   question: string;
   options: Array<{ label: string; value: string }>;
+}
+
+/**
+ * Parse a natural language deadline into an ISO date string
+ * Returns null if the deadline cannot be parsed or is invalid
+ */
+export async function parseDeadlineToDate(deadline: string): Promise<string | null> {
+  if (!deadline || deadline.trim() === '') {
+    return null;
+  }
+
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  const prompt = `Convert this natural language deadline into an ISO date (YYYY-MM-DD format).
+
+Today's date: ${today}
+
+Deadline: "${deadline}"
+
+Rules:
+- "next friday" means the upcoming Friday
+- "this friday" means this week's Friday (if today is after Friday, use next Friday)
+- "5 working days" means 5 business days from today (exclude weekends)
+- "3 days" means 3 calendar days from today
+- If the deadline is ambiguous or cannot be determined, return null
+
+Return ONLY the date in YYYY-MM-DD format or null. No explanation.`;
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-5-20250929',
+    max_tokens: 50,
+    messages: [
+      { role: 'user', content: prompt },
+    ],
+  });
+
+  const content = message.content[0];
+  if (content.type !== 'text') {
+    return null;
+  }
+
+  const result = content.text.trim();
+
+  // Check if result is a valid ISO date or null
+  if (result === 'null') {
+    return null;
+  }
+
+  // Validate ISO date format (YYYY-MM-DD)
+  const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (isoDateRegex.test(result)) {
+    return result;
+  }
+
+  return null;
 }
 
 /**
