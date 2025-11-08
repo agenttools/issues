@@ -12,7 +12,7 @@ import {
   initializeLinear,
   type Team,
 } from './src/lib/linear';
-import { extractIssuesStructured, matchIssuesToLinear, initializeAnthropic } from './src/lib/claude';
+import { extractIssuesStructured, matchIssuesToLinear, initializeAnthropic, generateEnrichmentQuestions } from './src/lib/claude';
 import { getAnthropicApiKey, getLinearApiKey } from './src/lib/config';
 import { symbols, theme, box, separator, tree, actionBadge } from './src/lib/theme';
 
@@ -309,16 +309,6 @@ program
           message: 'When should the deadline be? (e.g., "5 working days", "next friday", "this thursday"):',
         });
 
-        // Dependencies question
-        const hasDependencies = await select({
-          message: 'Does this have dependencies or blockers?',
-          choices: [
-            { name: 'No dependencies', value: 'none' },
-            { name: 'Depends on other work', value: 'has_dependencies' },
-            { name: 'Blocked by external factors', value: 'blocked' },
-          ],
-        });
-
         // Time commitment / complexity
         const timeCommitment = await select({
           message: 'Time commitment estimate?',
@@ -332,8 +322,31 @@ program
           ],
         });
 
+        // Generate contextual questions using Claude
+        const contextualQuestions = await generateEnrichmentQuestions(issue, transcript);
+
+        // Store answers to contextual questions
+        const contextualAnswers: Record<string, string> = {};
+
+        for (const q of contextualQuestions) {
+          const answer = await select({
+            message: q.question,
+            choices: q.options.map(opt => ({ name: opt.label, value: opt.value })),
+          });
+          contextualAnswers[q.question] = answer;
+        }
+
         // Append enrichment data to description
-        const enrichmentNotes = `\n\n---\n**Deadline:** ${deadline}\n**Dependencies:** ${hasDependencies}\n**Time Commitment:** ${timeCommitment}`;
+        let enrichmentNotes = `\n\n---\n**Deadline:** ${deadline}\n**Time Commitment:** ${timeCommitment}`;
+
+        // Add contextual answers
+        if (Object.keys(contextualAnswers).length > 0) {
+          enrichmentNotes += '\n\n**Additional Context:**';
+          for (const [question, answer] of Object.entries(contextualAnswers)) {
+            enrichmentNotes += `\n- ${question} ${answer}`;
+          }
+        }
+
         issue.description += enrichmentNotes;
       } else if (item.action === 'update' || item.action === 'comment') {
         // For updates/comments, ask if additional context is needed

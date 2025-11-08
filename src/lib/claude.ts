@@ -209,3 +209,71 @@ Return ONLY valid JSON.`;
     throw new Error('Claude did not return valid JSON for matching');
   }
 }
+
+export interface EnrichmentQuestion {
+  question: string;
+  options: Array<{ label: string; value: string }>;
+}
+
+/**
+ * Generate contextual enrichment questions for an issue
+ * Returns up to 4 multiple choice questions based on the issue content
+ */
+export async function generateEnrichmentQuestions(
+  issue: ExtractedIssue,
+  transcript: string
+): Promise<EnrichmentQuestion[]> {
+  const prompt = `Based on this issue and the original client feedback, generate 2-4 contextual multiple choice questions to enrich the ticket with relevant information.
+
+Issue:
+Title: ${issue.title}
+Description: ${issue.description}
+Type: ${issue.type}
+Priority: ${issue.priority}
+
+Original Feedback:
+${transcript}
+
+Generate questions that would help the developer understand:
+- Specific requirements or preferences mentioned
+- Technical constraints or considerations
+- User experience expectations
+- Integration points or dependencies
+
+Each question should have 2-4 options. Return as JSON:
+[
+  {
+    "question": "Question text?",
+    "options": [
+      { "label": "Option 1", "value": "option_1" },
+      { "label": "Option 2", "value": "option_2" }
+    ]
+  }
+]
+
+Return ONLY valid JSON. Generate 2-4 questions.`;
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-5-20250929',
+    max_tokens: 2048,
+    messages: [
+      { role: 'user', content: prompt },
+      { role: 'assistant', content: '[' },
+    ],
+  });
+
+  const content = message.content[0];
+  if (content.type !== 'text') {
+    throw new Error('Expected text response from Claude');
+  }
+
+  try {
+    const jsonText = '[' + content.text.trim();
+    const questions: EnrichmentQuestion[] = JSON.parse(jsonText);
+    return questions;
+  } catch (error) {
+    console.error('Failed to parse enrichment questions:', '[' + content.text);
+    console.error('Full error:', error);
+    throw new Error('Claude did not return valid JSON for enrichment questions');
+  }
+}
