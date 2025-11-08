@@ -38,7 +38,8 @@
     "dry-run": "bun run index.ts process --dry-run"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19.2.2"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -49,7 +50,13 @@
     "@linear/sdk": "^63.3.0",
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
-    "ora": "^9.0.0"
+    "ink": "^6.4.0",
+    "ink-box": "^2.0.0",
+    "ink-select-input": "^6.2.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "ora": "^9.0.0",
+    "react": "^19.2.0"
   },
   "engines": {
     "node": ">=18.0.0"
