@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agenttools/issue.git"
+    "url": "git+https://github.com/agenttools/issue.git"
   },
   "bugs": {
     "url": "https://github.com/agenttools/issue/issues"
@@ -23,7 +23,7 @@
     "agenttools"
   ],
   "bin": {
-    "issue": "./index.ts"
+    "issue": "index.ts"
   },
   "files": [
     "index.ts",
