@@ -1,6 +1,6 @@
-# Issue Manager
+# Issues
 
-A CLI tool that uses AI to automatically process client feedback and update Linear tickets.
+An AI-powered CLI tool to automatically process client feedback and update Linear tickets.
 
 ## Overview
 
@@ -21,8 +21,27 @@ This tool streamlines the process of managing client issues by:
 
 ## Installation
 
+### Install from GitHub
+
+Using npm:
 ```bash
-bun install
+npm install -g github:agenttools/issues
+```
+
+Using bun:
+```bash
+bun add -g github:agenttools/issues
+```
+
+### Install from npm (once published)
+
+```bash
+npm install -g @agenttools/issues
+```
+
+Or with bun:
+```bash
+bun add -g @agenttools/issues
 ```
 
 ## Setup
@@ -50,30 +69,34 @@ Or add them to your `.env` file.
 
 ## Usage
 
-### Basic Usage
+After installation, simply run:
 
 ```bash
-bun start
+issues
 ```
 
-Or:
-
-```bash
-bun run process
-```
+This will:
+1. Prompt for API keys (if not already configured)
+2. Ask you to paste your client feedback
+3. Let you select which team/client
+4. Analyze the feedback with AI
+5. Show proposed changes
+6. Apply changes after confirmation
 
 ### Dry Run Mode
 
 Preview what changes would be made without actually applying them:
 
 ```bash
-bun run dry-run
+issues --dry-run
 ```
 
-Or:
+### Help
+
+View all available options:
 
 ```bash
-bun run index.ts process --dry-run
+issues --help
 ```
 
 ## Workflow
@@ -88,7 +111,7 @@ bun run index.ts process --dry-run
 ## Example
 
 ```bash
-$ bun start
+$ issues
 
 🚀 Issue Manager - Processing client feedback...
 

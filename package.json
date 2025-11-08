@@ -1,10 +1,37 @@
 {
-  "name": "issue-manager",
+  "name": "@agenttools/issues",
   "version": "0.1.0",
-  "description": "CLI tool to manage Linear issues from client feedback using AI",
+  "description": "AI-powered CLI tool to manage Linear issues from client feedback",
+  "author": "AgentTools",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agenttools/issues.git"
+  },
+  "bugs": {
+    "url": "https://github.com/agenttools/issues/issues"
+  },
+  "homepage": "https://github.com/agenttools/issues#readme",
+  "keywords": [
+    "linear",
+    "issues",
+    "ai",
+    "cli",
+    "issue-management",
+    "anthropic",
+    "claude",
+    "agenttools"
+  ],
+  "bin": {
+    "issues": "./index.ts"
+  },
+  "files": [
+    "index.ts",
+    "src",
+    "README.md"
+  ],
   "module": "index.ts",
   "type": "module",
-  "private": true,
   "scripts": {
     "start": "bun run index.ts",
     "process": "bun run index.ts process",
@@ -23,5 +50,8 @@
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
     "ora": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
