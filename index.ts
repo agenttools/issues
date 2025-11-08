@@ -18,9 +18,81 @@ import { getAnthropicApiKey, getLinearApiKey } from './src/lib/config';
 const program = new Command();
 
 program
-  .name('issue-manager')
+  .name('issues')
   .description('CLI tool to manage Linear issues from client feedback')
-  .version('0.1.0');
+  .version('0.1.0')
+  .option('--tldr', 'Show a brief explanation of what this tool does');
+
+// Handle --tldr flag
+program.hook('preAction', (thisCommand, actionCommand) => {
+  const opts = thisCommand.opts();
+  if (opts.tldr) {
+    console.log(chalk.bold.cyan('\n📝 Issues - AI-Powered Linear Issue Manager\n'));
+    console.log(chalk.white('This tool automatically processes unstructured client feedback and updates Linear tickets.\n'));
+    console.log(chalk.bold('How it works:'));
+    console.log(chalk.dim('  1. Paste feedback from meetings, emails, or Slack'));
+    console.log(chalk.dim('  2. AI extracts and categorizes issues'));
+    console.log(chalk.dim('  3. Smart matching to existing Linear tickets'));
+    console.log(chalk.dim('  4. Creates new tickets or updates existing ones\n'));
+    console.log(chalk.bold('Key features:'));
+    console.log(chalk.dim('  • AI-powered issue extraction (Claude)'));
+    console.log(chalk.dim('  • Intelligent ticket matching'));
+    console.log(chalk.dim('  • Multi-action support (create/update/comment)'));
+    console.log(chalk.dim('  • Preview mode with --dry-run'));
+    console.log(chalk.dim('  • Interactive API key setup\n'));
+    console.log(chalk.bold('Usage:'));
+    console.log(chalk.cyan('  issues              ') + chalk.dim('# Start interactive session'));
+    console.log(chalk.cyan('  issues --dry-run    ') + chalk.dim('# Preview changes only'));
+    console.log(chalk.cyan('  issues --agent      ') + chalk.dim('# For AI agents (tmux mode)'));
+    console.log(chalk.cyan('  issues --help       ') + chalk.dim('# Show all options\n'));
+    process.exit(0);
+  }
+});
+
+program
+  .command('agent')
+  .description('Start in tmux session for AI agent interaction')
+  .action(async () => {
+    const { execSync } = await import('child_process');
+
+    console.log(chalk.bold.cyan('\n🤖 Agent Mode - Starting in tmux session...\n'));
+
+    const sessionName = `issues-${Date.now()}`;
+
+    try {
+      // Check if tmux is available
+      execSync('which tmux', { stdio: 'ignore' });
+
+      // Start new tmux session with issues command
+      execSync(`tmux new-session -d -s ${sessionName} 'bun run ${process.argv[1]}'`, {
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+
+      console.log(chalk.green('✓ Started tmux session:'), chalk.bold(sessionName));
+      console.log(chalk.dim('\nAgent Instructions:'));
+      console.log(chalk.white('To interact with the tool, use tmux commands:\n'));
+      console.log(chalk.cyan('  # Send keys to the session'));
+      console.log(chalk.dim(`  tmux send-keys -t ${sessionName} "your input here" C-m\n`));
+      console.log(chalk.cyan('  # Capture pane output'));
+      console.log(chalk.dim(`  tmux capture-pane -t ${sessionName} -p\n`));
+      console.log(chalk.cyan('  # Attach to session (for debugging)'));
+      console.log(chalk.dim(`  tmux attach -t ${sessionName}\n`));
+      console.log(chalk.cyan('  # Kill session when done'));
+      console.log(chalk.dim(`  tmux kill-session -t ${sessionName}\n`));
+      console.log(chalk.bold.yellow('Session name: ') + chalk.bold(sessionName));
+      console.log(chalk.dim('\nThe interactive tool is now running in the tmux session.'));
+      console.log(chalk.dim('Use tmux commands to send input and read output.\n'));
+
+    } catch (error) {
+      console.error(chalk.red('\n✗ Error: tmux is not installed or not available'));
+      console.log(chalk.dim('\nTo install tmux:'));
+      console.log(chalk.dim('  macOS:   brew install tmux'));
+      console.log(chalk.dim('  Ubuntu:  sudo apt-get install tmux'));
+      console.log(chalk.dim('  Other:   See https://github.com/tmux/tmux/wiki\n'));
+      process.exit(1);
+    }
+  });
 
 program
   .command('process', { isDefault: true })

@@ -91,6 +91,45 @@ Preview what changes would be made without actually applying them:
 issues --dry-run
 ```
 
+### Quick Overview
+
+Get a brief explanation of what the tool does:
+
+```bash
+issues --tldr
+```
+
+### Agent Mode (for AI Agents)
+
+AI agents can use this command to interact with the tool in a tmux session:
+
+```bash
+issues agent
+```
+
+This will:
+1. Start a new tmux session with the tool running
+2. Provide instructions for sending inputs and reading outputs
+3. Allow the agent to interact programmatically using tmux commands
+
+Example agent workflow:
+```bash
+# Start agent mode
+issues agent
+
+# Send input to the session (use the session name from output)
+tmux send-keys -t issues-1234567890 "paste your feedback here" C-m
+
+# Read the output
+tmux capture-pane -t issues-1234567890 -p
+
+# Send more input as needed
+tmux send-keys -t issues-1234567890 "y" C-m
+
+# Kill session when done
+tmux kill-session -t issues-1234567890
+```
+
 ### Help
 
 View all available options:
@@ -180,6 +219,19 @@ The tool is built with:
 - **Chalk**: Terminal styling
 - **Ora**: Spinners and progress indicators
 
+## For AI Agents
+
+This tool is designed to be used by both humans and AI agents. When using as an AI agent:
+
+1. **Quick Info**: Use `issues --tldr` to understand the tool
+2. **Agent Mode**: Use `issues agent` to start in a tmux session for programmatic interaction
+3. **Tmux Commands**: The tool provides the exact tmux commands needed to:
+   - Send keyboard input to the session
+   - Capture and read output from the session
+   - Clean up when done
+
+The agent mode creates an isolated tmux session where the interactive CLI runs, allowing full programmatic control.
+
 ## Development Roadmap
 
 - [ ] Add more granular error handling
@@ -188,6 +240,7 @@ The tool is built with:
 - [ ] Custom prompt templates
 - [ ] Support for attachments/screenshots in issues
 - [ ] Integration with other issue trackers (Jira, GitHub Issues)
+- [ ] JSON output mode for easier agent parsing
 
 ## License
 
