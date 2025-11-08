@@ -16,9 +16,10 @@ This tool streamlines the process of managing client issues by:
 
 - 🤖 **AI-Powered Extraction**: Uses Claude Sonnet 4.5 to extract structured issues from unstructured text
 - 🎯 **Smart Matching**: Automatically matches new issues to existing Linear tickets
-- 🗓️ **Natural Language Deadlines**: Parse deadlines like "next friday", "this thursday", "5 working days" into actual dates
-- 📋 **Contextual Enrichment**: AI generates 1-3 follow-up questions based on your feedback to gather important context
-- 🔢 **Agent-Friendly Interface**: Numbered options (1-4) with write-in support for AI agent control
+- 🗓️ **Smart Deadlines**: Choose from preset options or write-in custom deadlines (parsed with AI)
+- 📋 **Contextual Enrichment**: AI automatically generates up to 6 follow-up questions based on your feedback
+- 🔢 **Agent-Friendly Interface**: Numbered options (1-7) with write-in support for AI agent control
+- ⚡ **Quick Mode**: Skip enrichment questions with `issue quick` for fast processing
 - ♻️ **Refinement Workflow**: Cancel and refine with natural language feedback before creating issues
 - 📊 **Multi-Action Support**: Create new tickets, update existing ones, or add comments
 - 👁️ **Preview Mode**: Dry-run option to preview changes before applying
@@ -89,16 +90,33 @@ issue
 ### Workflow
 
 1. **Paste Feedback**: Paste your client transcript or message
-2. **Enrichment Questions** (optional):
-   - Answer AI-generated contextual questions about the feedback
-   - Set a natural language deadline (e.g., "next friday", "5 working days")
-   - All answers provide context for better issue extraction
+2. **Enrichment Questions** (automatic):
+   - Answer up to 6 AI-generated contextual questions about the feedback
+   - Each question has 2-4 options plus write-in (option 5)
+   - Questions adapt to your specific feedback
 3. **Select Team**: Choose which Linear team/client this is for
 4. **AI Analysis**: Claude extracts issues using enriched context and matches them to existing tickets
 5. **Review**: See proposed actions (create/update/comment)
-6. **Refine** (if needed): Cancel and provide feedback to regenerate with adjustments
-7. **Confirm**: Approve the changes
-8. **Execute**: Changes are applied to Linear with due dates automatically set
+6. **Set Deadlines**: For each new issue, choose from:
+   - 1. Write-in (custom deadline)
+   - 2. Tuesday (after today)
+   - 3. Wednesday (after today)
+   - 4. Thursday (after today)
+   - 5. Friday (after today)
+   - 6. No deadline
+   - 7. 1 week
+7. **Refine** (if needed): Cancel and provide feedback to regenerate with adjustments
+8. **Confirm**: Approve the changes
+9. **Execute**: Changes are applied to Linear with due dates automatically set
+
+### Quick Mode
+
+Skip all enrichment questions for fast processing:
+
+```bash
+issue quick           # Fast mode without enrichment
+issue quick --dry-run # Quick mode with preview
+```
 
 ### Dry Run Mode
 
@@ -106,6 +124,14 @@ Preview what changes would be made without actually applying them:
 
 ```bash
 issue --dry-run
+issue process --dry-run
+```
+
+### Skip Enrichment (Alternative to Quick Mode)
+
+```bash
+issue --skip-enrichment
+issue process --skip-enrichment
 ```
 
 ### Quick Overview
@@ -257,24 +283,39 @@ PROPOSED ACTIONS
 
 ## Enrichment Questions
 
-The tool uses Claude to generate contextual questions based on your specific feedback. These questions help gather important context that improves issue extraction and prioritization.
+The tool **automatically** uses Claude to generate up to 6 contextual questions based on your specific feedback. These questions help gather important context that improves issue extraction and prioritization.
 
-### Deadline Parsing
+**Question Topics:**
+- Design or engineering approach
+- Clarification on what the issue is
+- Clarification on how the issue should be solved
 
-Natural language deadlines are automatically converted to ISO dates and set on Linear issues:
+**Question Format:**
+- Each question has 2-4 multiple choice options
+- Option 5 is always "Other (write in)" for custom responses
+- Extra spacing between questions for readability
 
-- **"next friday"** → Upcoming Friday's date
-- **"this thursday"** → This week's Thursday (or next week if passed)
-- **"5 working days"** → 5 business days from today (excludes weekends)
-- **"3 days"** → 3 calendar days from today
-- **"january 15"** → Specific date
+### Deadline Options
+
+After reviewing proposed actions, you'll set deadlines for each new issue with **7 numbered options**:
+
+1. **Write-in** - Enter any custom deadline (e.g., "next monday", "january 15", "2 weeks")
+2. **Tuesday (after today)** - Next Tuesday
+3. **Wednesday (after today)** - Next Wednesday
+4. **Thursday (after today)** - Next Thursday
+5. **Friday (after today)** - Next Friday
+6. **No deadline** - Skip setting a deadline
+7. **1 week** - 7 days from today
+
+Custom deadlines are automatically parsed by AI and converted to ISO dates for Linear.
 
 ### Agent-Friendly Design
 
-All questions use numbered options (1-4) for easy AI agent control:
-- Options are numbered for clear selection
-- Every question includes "Other (write in)" option
+All questions use numbered options for easy AI agent control:
+- Enrichment questions: Options 1-4 with option 5 as write-in
+- Deadline questions: Options 1-7 with option 1 as write-in
 - Perfect for programmatic interaction via tmux
+- Clear numbering makes LLM selection straightforward
 
 ## Refinement Workflow
 
@@ -351,9 +392,12 @@ This tool is designed to be used by both humans and AI agents. When using as an 
 
 1. **Quick Info**: Use `issue --tldr` to understand the tool
 2. **Agent Mode**: Use `issue agent` to start in a tmux session for programmatic interaction
-3. **Numbered Options**: All questions use numbered choices (1-4) for easy selection
-4. **Write-in Support**: Every question includes "Other (write in)" for custom responses
-5. **Tmux Commands**: The tool provides the exact tmux commands needed to:
+3. **Quick Mode**: Use `issue quick` to skip enrichment questions for faster processing
+4. **Numbered Options**:
+   - Enrichment questions: Options 1-4 with option 5 as write-in
+   - Deadline questions: Options 1-7 with option 1 as write-in
+5. **Write-in Support**: Always accessible via numbered option
+6. **Tmux Commands**: The tool provides the exact tmux commands needed to:
    - Send keyboard input to the session
    - Capture and read output from the session
    - Clean up when done
@@ -362,12 +406,37 @@ The agent mode creates an isolated tmux session where the interactive CLI runs, 
 
 ## Changelog
 
+### v0.2.9 (Latest)
+- Simplified deadline options to 7 choices focused on weekdays
+- Write-in moved to option 1 for easy LLM access
+- Added Wednesday to deadline options
+- Streamlined UX for faster deadline selection
+
+### v0.2.8
+- Increased enrichment questions from 3 to up to 6
+- Added more question topics: timeline, urgency, stakeholder involvement
+- Improved context gathering for complex feedback
+
+### v0.2.7
+- Enrichment questions now automatic by default (no confirmation prompt)
+- Added `issue quick` command to skip enrichment questions
+- Added `--skip-enrichment` flag
+
+### v0.2.6
+- Replaced deadline free text with numbered select options (1-10)
+- Added preset deadline choices: 1-5 working days, weekdays
+- Suppressed punycode deprecation warning
+
+### v0.2.5
+- Moved deadline question to per-issue basis (ask for each issue separately)
+- Changed write-in option to number 5 for LLM accessibility
+- Added extra spacing between questions
+
 ### v0.2.4
 - Added LLM-powered natural language deadline parsing
 - Move enrichment questions before issue extraction for better context
 - Automatic Linear issue due date setting
-- Numbered multiple choice options (1-4) with write-in support
-- Reduced enrichment questions to 1-3 most relevant ones
+- Numbered multiple choice options with write-in support
 
 ### v0.2.3
 - Fixed version display
