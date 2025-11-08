@@ -1,17 +1,17 @@
 {
-  "name": "@agenttools/issues",
+  "name": "@agenttools/issue",
   "version": "0.1.0",
   "description": "AI-powered CLI tool to manage Linear issues from client feedback",
   "author": "AgentTools",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agenttools/issues.git"
+    "url": "https://github.com/agenttools/issue.git"
   },
   "bugs": {
-    "url": "https://github.com/agenttools/issues/issues"
+    "url": "https://github.com/agenttools/issue/issues"
   },
-  "homepage": "https://github.com/agenttools/issues#readme",
+  "homepage": "https://github.com/agenttools/issue#readme",
   "keywords": [
     "linear",
     "issues",
@@ -23,7 +23,7 @@
     "agenttools"
   ],
   "bin": {
-    "issues": "./index.ts"
+    "issue": "./index.ts"
   },
   "files": [
     "index.ts",

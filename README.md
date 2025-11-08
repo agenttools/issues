@@ -1,4 +1,4 @@
-# Issues
+# Issue
 
 An AI-powered CLI tool to automatically process client feedback and update Linear tickets.
 
@@ -25,23 +25,23 @@ This tool streamlines the process of managing client issues by:
 
 Using npm:
 ```bash
-npm install -g github:agenttools/issues
+npm install -g github:agenttools/issue
 ```
 
 Using bun:
 ```bash
-bun add -g github:agenttools/issues
+bun add -g github:agenttools/issue
 ```
 
 ### Install from npm (once published)
 
 ```bash
-npm install -g @agenttools/issues
+npm install -g @agenttools/issue
 ```
 
 Or with bun:
 ```bash
-bun add -g @agenttools/issues
+bun add -g @agenttools/issue
 ```
 
 ## Setup
@@ -54,7 +54,7 @@ Just run the tool and it will prompt you for:
 1. **Anthropic API Key** - Get yours from https://console.anthropic.com/
 2. **Linear API Key** - Get yours from https://linear.app/settings/api
 
-The tool will ask if you want to save these keys to `~/.issue-manager/config.json` for future use.
+The tool will ask if you want to save these keys to `~/.issue/config.json` for future use.
 
 ### Option 2: Environment Variables
 
@@ -72,7 +72,7 @@ Or add them to your `.env` file.
 After installation, simply run:
 
 ```bash
-issues
+issue
 ```
 
 This will:
@@ -88,7 +88,7 @@ This will:
 Preview what changes would be made without actually applying them:
 
 ```bash
-issues --dry-run
+issue --dry-run
 ```
 
 ### Quick Overview
@@ -96,7 +96,7 @@ issues --dry-run
 Get a brief explanation of what the tool does:
 
 ```bash
-issues --tldr
+issue --tldr
 ```
 
 ### Agent Mode (for AI Agents)
@@ -104,7 +104,7 @@ issues --tldr
 AI agents can use this command to interact with the tool in a tmux session:
 
 ```bash
-issues agent
+issue agent
 ```
 
 This will:
@@ -115,19 +115,19 @@ This will:
 Example agent workflow:
 ```bash
 # Start agent mode
-issues agent
+issue agent
 
 # Send input to the session (use the session name from output)
-tmux send-keys -t issues-1234567890 "paste your feedback here" C-m
+tmux send-keys -t issue-1234567890 "paste your feedback here" C-m
 
 # Read the output
-tmux capture-pane -t issues-1234567890 -p
+tmux capture-pane -t issue-1234567890 -p
 
 # Send more input as needed
-tmux send-keys -t issues-1234567890 "y" C-m
+tmux send-keys -t issue-1234567890 "y" C-m
 
 # Kill session when done
-tmux kill-session -t issues-1234567890
+tmux kill-session -t issue-1234567890
 ```
 
 ### Help
@@ -135,7 +135,7 @@ tmux kill-session -t issues-1234567890
 View all available options:
 
 ```bash
-issues --help
+issue --help
 ```
 
 ## Workflow
@@ -150,7 +150,7 @@ issues --help
 ## Example
 
 ```bash
-$ issues
+$ issue
 
 🚀 Issue Manager - Processing client feedback...
 
@@ -198,12 +198,13 @@ Summary:
 ## Project Structure
 
 ```
-issue-manager/
+issue/
 ├── index.ts                 # Main CLI entry point
 ├── src/
 │   └── lib/
 │       ├── claude.ts       # Claude AI integration
-│       └── linear.ts       # Linear API integration
+│       ├── linear.ts       # Linear API integration
+│       └── config.ts       # API key configuration
 ├── package.json
 └── README.md
 ```
@@ -223,8 +224,8 @@ The tool is built with:
 
 This tool is designed to be used by both humans and AI agents. When using as an AI agent:
 
-1. **Quick Info**: Use `issues --tldr` to understand the tool
-2. **Agent Mode**: Use `issues agent` to start in a tmux session for programmatic interaction
+1. **Quick Info**: Use `issue --tldr` to understand the tool
+2. **Agent Mode**: Use `issue agent` to start in a tmux session for programmatic interaction
 3. **Tmux Commands**: The tool provides the exact tmux commands needed to:
    - Send keyboard input to the session
    - Capture and read output from the session

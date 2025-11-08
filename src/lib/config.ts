@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const CONFIG_DIR = join(homedir(), '.issue-manager');
+const CONFIG_DIR = join(homedir(), '.issue');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
 interface Config {

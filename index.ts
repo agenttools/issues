@@ -18,7 +18,7 @@ import { getAnthropicApiKey, getLinearApiKey } from './src/lib/config';
 const program = new Command();
 
 program
-  .name('issues')
+  .name('issue')
   .description('CLI tool to manage Linear issues from client feedback')
   .version('0.1.0')
   .option('--tldr', 'Show a brief explanation of what this tool does');
@@ -41,10 +41,10 @@ program.hook('preAction', (thisCommand, actionCommand) => {
     console.log(chalk.dim('  • Preview mode with --dry-run'));
     console.log(chalk.dim('  • Interactive API key setup\n'));
     console.log(chalk.bold('Usage:'));
-    console.log(chalk.cyan('  issues              ') + chalk.dim('# Start interactive session'));
-    console.log(chalk.cyan('  issues --dry-run    ') + chalk.dim('# Preview changes only'));
-    console.log(chalk.cyan('  issues --agent      ') + chalk.dim('# For AI agents (tmux mode)'));
-    console.log(chalk.cyan('  issues --help       ') + chalk.dim('# Show all options\n'));
+    console.log(chalk.cyan('  issue              ') + chalk.dim('# Start interactive session'));
+    console.log(chalk.cyan('  issue --dry-run    ') + chalk.dim('# Preview changes only'));
+    console.log(chalk.cyan('  issue agent        ') + chalk.dim('# For AI agents (tmux mode)'));
+    console.log(chalk.cyan('  issue --help       ') + chalk.dim('# Show all options\n'));
     process.exit(0);
   }
 });
@@ -57,7 +57,7 @@ program
 
     console.log(chalk.bold.cyan('\n🤖 Agent Mode - Starting in tmux session...\n'));
 
-    const sessionName = `issues-${Date.now()}`;
+    const sessionName = `issue-${Date.now()}`;
 
     try {
       // Check if tmux is available
