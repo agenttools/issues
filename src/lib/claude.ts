@@ -47,7 +47,7 @@ export interface ProcessedIssue {
 export async function extractIssuesStructured(transcript: string): Promise<ExtractedIssue[]> {
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
-    max_tokens: 2048,
+    max_tokens: 8048,
     messages: [
       {
         role: 'user',
@@ -181,19 +181,28 @@ Return ONLY valid JSON.`;
       reason: string;
     }> = JSON.parse(jsonText);
 
-    return matches.map(match => {
-      const matchedIssue = match.matchedIssueIdentifier
-        ? existingIssues.find(i => i.identifier === match.matchedIssueIdentifier)
-        : undefined;
+    return matches
+      .filter(match => {
+        // Validate issueIndex is within bounds
+        if (match.issueIndex < 0 || match.issueIndex >= extractedIssues.length) {
+          console.warn(`Warning: Invalid issueIndex ${match.issueIndex} (valid range: 0-${extractedIssues.length - 1}). Skipping this match.`);
+          return false;
+        }
+        return true;
+      })
+      .map(match => {
+        const matchedIssue = match.matchedIssueIdentifier
+          ? existingIssues.find(i => i.identifier === match.matchedIssueIdentifier)
+          : undefined;
 
-      return {
-        extractedIssue: extractedIssues[match.issueIndex],
-        action: match.action,
-        matchedIssueId: matchedIssue?.id,
-        matchedIssueIdentifier: match.matchedIssueIdentifier,
-        reason: match.reason,
-      };
-    });
+        return {
+          extractedIssue: extractedIssues[match.issueIndex],
+          action: match.action,
+          matchedIssueId: matchedIssue?.id,
+          matchedIssueIdentifier: match.matchedIssueIdentifier,
+          reason: match.reason,
+        };
+      });
   } catch (error) {
     console.error('Failed to parse Claude matching response:', '[' + content.text);
     console.error('Full error:', error);
