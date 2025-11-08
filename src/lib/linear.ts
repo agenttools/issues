@@ -1,10 +1,17 @@
 /**
- * Linear MCP integration
- *
- * SETUP NOTE: Linear MCP server needs to be configured.
- * Once configured, replace the mock implementations below with actual MCP calls.
- * The MCP tools should be: mcp__linear__list_teams, mcp__linear__list_issues, etc.
+ * Linear SDK integration
  */
+
+import { LinearClient } from '@linear/sdk';
+
+let linearClient: LinearClient;
+
+/**
+ * Initialize the Linear client with the provided API key
+ */
+export function initializeLinear(apiKey: string): void {
+  linearClient = new LinearClient({ apiKey });
+}
 
 export interface Team {
   id: string;
@@ -14,14 +21,15 @@ export interface Team {
 
 /**
  * Fetch all teams from Linear
- *
- * TODO: Replace with actual MCP call once Linear MCP is configured
- * Example: const teams = await mcp__linear__list_teams();
  */
 export async function fetchTeams(): Promise<Team[]> {
-  throw new Error(
-    'Linear MCP not configured. Please set up Linear MCP server and update this function to use mcp__linear__list_teams'
-  );
+  const teams = await linearClient.teams();
+
+  return teams.nodes.map(team => ({
+    id: team.id,
+    name: team.name,
+    key: team.key,
+  }));
 }
 
 export interface Issue {
@@ -35,21 +43,26 @@ export interface Issue {
 
 /**
  * Fetch issues for a specific team
- *
- * TODO: Replace with actual MCP call once Linear MCP is configured
- * Example: const issues = await mcp__linear__list_issues({ teamId });
  */
 export async function fetchIssuesForTeam(teamId: string): Promise<Issue[]> {
-  throw new Error(
-    'Linear MCP not configured. Please set up Linear MCP server and update this function to use mcp__linear__list_issues'
-  );
+  const issues = await linearClient.issues({
+    filter: {
+      team: { id: { eq: teamId } },
+    },
+  });
+
+  return issues.nodes.map(issue => ({
+    id: issue.id,
+    identifier: issue.identifier,
+    title: issue.title,
+    description: issue.description || null,
+    priority: issue.priority,
+    state: issue.state?.name || 'Unknown',
+  }));
 }
 
 /**
  * Create a new issue in Linear
- *
- * TODO: Replace with actual MCP call once Linear MCP is configured
- * Example: const issue = await mcp__linear__create_issue({ teamId, title, description, priority });
  */
 export async function createIssue(params: {
   teamId: string;
@@ -57,28 +70,40 @@ export async function createIssue(params: {
   description: string;
   priority: number;
 }): Promise<Issue> {
-  throw new Error(
-    'Linear MCP not configured. Please set up Linear MCP server and update this function to use mcp__linear__create_issue'
-  );
+  const issuePayload = await linearClient.createIssue({
+    teamId: params.teamId,
+    title: params.title,
+    description: params.description,
+    priority: params.priority,
+  });
+
+  const createdIssue = await issuePayload.issue;
+  if (!createdIssue) {
+    throw new Error('Failed to create issue');
+  }
+
+  return {
+    id: createdIssue.id,
+    identifier: createdIssue.identifier,
+    title: createdIssue.title,
+    description: createdIssue.description || null,
+    priority: createdIssue.priority,
+    state: createdIssue.state?.name || 'Unknown',
+  };
 }
 
 /**
  * Add a comment to an existing Linear issue
- *
- * TODO: Replace with actual MCP call once Linear MCP is configured
- * Example: await mcp__linear__create_comment({ issueId, body });
  */
 export async function addCommentToIssue(issueId: string, comment: string): Promise<void> {
-  throw new Error(
-    'Linear MCP not configured. Please set up Linear MCP server and update this function to use mcp__linear__create_comment'
-  );
+  await linearClient.createComment({
+    issueId,
+    body: comment,
+  });
 }
 
 /**
  * Update an existing Linear issue
- *
- * TODO: Replace with actual MCP call once Linear MCP is configured
- * Example: await mcp__linear__update_issue({ issueId, description, priority });
  */
 export async function updateIssue(
   issueId: string,
@@ -87,7 +112,5 @@ export async function updateIssue(
     priority?: number;
   }
 ): Promise<void> {
-  throw new Error(
-    'Linear MCP not configured. Please set up Linear MCP server and update this function to use mcp__linear__update_issue'
-  );
+  await linearClient.updateIssue(issueId, updates);
 }

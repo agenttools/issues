@@ -27,25 +27,26 @@ bun install
 
 ## Setup
 
-### 1. Linear Integration
+The tool will prompt you for API keys when you first run it. You can choose to save them for future use, or provide them via environment variables.
 
-This tool requires Linear MCP to be configured. Once set up, update the placeholder functions in `src/lib/linear.ts`:
+### Option 1: Interactive Setup (Recommended)
 
-- `fetchTeams()` → Use `mcp__linear__list_teams`
-- `fetchIssuesForTeam()` → Use `mcp__linear__list_issues`
-- `createIssue()` → Use `mcp__linear__create_issue`
-- `updateIssue()` → Use `mcp__linear__update_issue`
-- `addCommentToIssue()` → Use `mcp__linear__create_comment`
+Just run the tool and it will prompt you for:
+1. **Anthropic API Key** - Get yours from https://console.anthropic.com/
+2. **Linear API Key** - Get yours from https://linear.app/settings/api
 
-### 2. Anthropic API Key
+The tool will ask if you want to save these keys to `~/.issue-manager/config.json` for future use.
 
-Set your Anthropic API key as an environment variable:
+### Option 2: Environment Variables
+
+Set the API keys as environment variables:
 
 ```bash
-export ANTHROPIC_API_KEY="your-api-key-here"
+export ANTHROPIC_API_KEY="your-anthropic-key"
+export LINEAR_API_KEY="your-linear-key"
 ```
 
-Or add it to your `.env` file.
+Or add them to your `.env` file.
 
 ## Usage
 
@@ -152,17 +153,18 @@ The tool is built with:
 - **Commander**: CLI framework
 - **@inquirer/prompts**: Interactive prompts
 - **Anthropic SDK**: Claude AI integration
+- **Linear SDK**: Linear API integration
 - **Chalk**: Terminal styling
 - **Ora**: Spinners and progress indicators
 
-## TODO
+## Development Roadmap
 
-- [ ] Configure Linear MCP server
-- [ ] Set up proper authentication
 - [ ] Add more granular error handling
 - [ ] Add logging/history of processed feedbacks
 - [ ] Support for bulk processing (multiple transcripts)
 - [ ] Custom prompt templates
+- [ ] Support for attachments/screenshots in issues
+- [ ] Integration with other issue trackers (Jira, GitHub Issues)
 
 ## License
 

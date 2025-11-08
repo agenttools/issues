@@ -5,12 +5,14 @@ import type { Issue } from './linear';
  * Claude API integration for extracting issues from text
  */
 
-// Initialize Anthropic client
-const apiKey = process.env.ANTHROPIC_API_KEY;
+let anthropic: Anthropic;
 
-const anthropic = new Anthropic({
-  apiKey: apiKey || '',
-});
+/**
+ * Initialize the Anthropic client with the provided API key
+ */
+export function initializeAnthropic(apiKey: string): void {
+  anthropic = new Anthropic({ apiKey });
+}
 
 export interface ExtractedIssue {
   title: string;
@@ -31,10 +33,6 @@ export interface ProcessedIssue {
  * Extract structured issues from transcript using Claude
  */
 export async function extractIssuesStructured(transcript: string): Promise<ExtractedIssue[]> {
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY environment variable not set');
-  }
-
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 2048,
@@ -84,10 +82,6 @@ Return ONLY a valid JSON array with no additional text. Example format:
  * Simple test - extract issues from transcript
  */
 export async function extractIssuesSimple(transcript: string): Promise<string> {
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY environment variable not set');
-  }
-
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 1024,
@@ -115,10 +109,6 @@ export async function matchIssuesToLinear(
   extractedIssues: ExtractedIssue[],
   existingIssues: Issue[]
 ): Promise<ProcessedIssue[]> {
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY environment variable not set');
-  }
-
   const prompt = `You are helping match newly reported issues to existing Linear issues.
 
 Existing Linear issues:

@@ -9,9 +9,11 @@ import {
   createIssue,
   addCommentToIssue,
   updateIssue,
+  initializeLinear,
   type Team,
 } from './src/lib/linear';
-import { extractIssuesStructured, matchIssuesToLinear } from './src/lib/claude';
+import { extractIssuesStructured, matchIssuesToLinear, initializeAnthropic } from './src/lib/claude';
+import { getAnthropicApiKey, getLinearApiKey } from './src/lib/config';
 
 const program = new Command();
 
@@ -27,6 +29,13 @@ program
   .action(async (options) => {
     const isDryRun = options.dryRun;
     console.log(chalk.bold('🚀 Issue Manager - Processing client feedback...\n'));
+
+    // Initialize APIs
+    const anthropicKey = await getAnthropicApiKey();
+    initializeAnthropic(anthropicKey);
+
+    const linearKey = await getLinearApiKey();
+    initializeLinear(linearKey);
 
     // Step 1: Get the transcript/message
     const transcript = await input({
